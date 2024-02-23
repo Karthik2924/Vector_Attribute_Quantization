@@ -1,1 +1,1 @@
-# Vector_Attention_Decomposition
+# Vector Attribute Quantization
