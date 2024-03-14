@@ -1,3 +1,7 @@
+'''
+source : https://github.com/kylehkhsu/latent_quantization/tree/main
+'''
+
 import numpy as np
 from sklearn import preprocessing, feature_selection, metrics, linear_model
 
