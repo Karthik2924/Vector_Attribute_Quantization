@@ -1,3 +1,8 @@
+'''
+Contains code to load data fast by storing in format which allows memory mapping.
+Reduces training time.
+'''
+
 import h5py
 import numpy as np
 import torch
@@ -5,7 +10,6 @@ import yaml
 with open("config.yaml", "r") as stream:
     cfg = yaml.safe_load(stream)
 device = cfg['device']
-#device=  'cuda'
 
 class falcor3d_data():
     def __init__(self, balanced_subset_size = 5000):
@@ -18,7 +22,7 @@ class falcor3d_data():
         self.nlatents = self.raw_labels.shape[1]
         self.l = [5,6,6,6,6,6,6]
         self.cumulate = [0,5,11,17,23,29,35]
-        #self.images = torch.from_numpy(np.load('/mnt/beegfs/ksanka/data/falcor3d/Falcor3D_down128/images.npy', mmap_mode='r+')).permute(0,3,1,2)/255.0
+
         self.images =np.load('/mnt/beegfs/ksanka/data/falcor3d/Falcor3D_down128/images.npy', mmap_mode='r+')
         self.labels = (self.raw_labels*(torch.tensor(self.l)-1)).long()
 
@@ -40,9 +44,17 @@ class falcor3d_data():
         return torch.from_numpy(self.images[ind]).permute(0,3,1,2)/255.0,self.labels[ind],self.raw_labels[ind]
         #return self.images[ind],self.labels[ind],self.raw_labels[ind]
     def get_sup_batch(self,batch_size = 64):
+        '''
+        arguments : batch_size
+        output : batch of processed images,labels and raw labels for supervised training
+        '''
         ind = self.sup[torch.randint(0,len(self.sup),(batch_size,))]
         return torch.from_numpy(self.images[ind]).permute(0,3,1,2)/255.0,self.labels[ind],self.raw_labels[ind]
     def get_unsup_batch(self,batch_size = 64):
+        '''
+        arguments : batch_size
+        output : batch of processed images,labels and raw labels for unsupervised training
+        '''
         ind = self.unsup[torch.randint(0,len(self.unsup),(batch_size,))]
         return torch.from_numpy(self.images[ind]).permute(0,3,1,2)/255.0,self.labels[ind],self.raw_labels[ind]
     def get_t_batch(self,batch_size = 64):

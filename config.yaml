@@ -1,3 +1,7 @@
 device: 'cuda' #'cpu','mps'
-
 dataset_name : 'shapes3d' # isaac, falcor
+learning_rate : 0.0001
+num_training_updates : 100000
+seed_list : [1234,12345,123456,1234567]
+clip_grad_norm : 1 #0 if not used
+

@@ -53,6 +53,7 @@ class AttributeQuantizer(nn.Module):
         self.dist_type = dist_type
     def compute_distance(self,inp,labels = None):
         if self.dist_type == "l2":
+            flat_input = inp
             distances= (torch.sum(flat_input**2, dim=1, keepdim=True) 
                     + torch.sum(self._embedding.weight.data**2, dim=1)
                     - 2 * torch.matmul(flat_input, self._embedding.weight.data.t()))
@@ -97,15 +98,12 @@ class AttributeQuantizer(nn.Module):
             
             # convert quantized from BHWC -> BCHW
             return loss,quantized,perplexity,encodings,encoding_indices
-            return {"closs":loss, "quantized":quantized, "perplexity":perplexity,"encodings":encodings,"encoding_indices":encoding_indices}#, encodings,encoding_indices#,None
 
         quantized = torch.matmul(encodings, self._embedding.weight).view(input_shape)
         
         # Loss
-        e_latent_loss = F.mse_loss(quantized.detach(), inputs,reduction = 'mean')
-        q_latent_loss = F.mse_loss(quantized, inputs.detach(),reduction = 'mean')
-        #loss = q_latent_loss + self._commitment_cost * e_latent_loss
-        #loss = e_latent_loss*self._commitment_cost + q_latent_loss*self.qloss
+        
+        # commitment_loss
         closs =  (torch.ones(distances.shape[0],device = flat_input.device) - torch.gather(distances,1,encoding_indices).squeeze(1)).mean()
         loss = closs
 
@@ -114,8 +112,6 @@ class AttributeQuantizer(nn.Module):
         perplexity = torch.exp(-torch.sum(avg_probs * torch.log(avg_probs + 1e-10)))
         return loss,quantized,perplexity,encodings,encoding_indices
 
-        # convert quantized from BHWC -> BCHW
-        return {"closs":loss, "quantized":quantized, "perplexity":perplexity,"encodings":encodings,"encoding_indices":encoding_indices}
 
 class attribute_encoder(nn.Module):
     def __init__(self,in_channels,cfg):
@@ -128,7 +124,6 @@ class attribute_encoder(nn.Module):
                                 out_channels = groups*10)
         self.conv3 = conv_block(in_channels = groups*10,out_channels = groups*30)
         self.conv4 = conv_block(in_channels = groups*30,out_channels = groups*30)
-        #self.res_stack = ResidualStack(120,120,num_residual_layers,120)
         self.gconv1 = group_conv_block(in_channels = groups*30,out_channels = groups*20,kernel = 3, stride = 1,padding = 1,groups = groups)
         self.gn1 = nn.GroupNorm(groups,groups*20)
         self.gconv4 = group_conv_block(in_channels = groups*20,out_channels = groups,kernel = 1,stride = 1,groups = groups,padding = 0)
@@ -139,14 +134,31 @@ class attribute_encoder(nn.Module):
         z = self.conv3(z)
         if self.img_width == 128:
             z = self.conv4(z)
-        #z = self.res_stack(z)
-        # print(z.shape)
-        # latent = F.gelu(self.gn1(self.gconv1(z)))
         out = {"lat":z}
         z = F.gelu(self.gn1(self.gconv1(z)))
         z = self.gconv4(z)
         z = self.gn2(z)
         out["pre_q"] = z
-        return out#,z.view(-1,6)
+        return out
 
+if __name__ == "__main__":
+    print("testing...")
+    batch_size = 32
+    fake_input = torch.rand(batch_size,3,64,64)
+    s_config = {
+    "groups" : 6,
+    "img_width" : 64,
+    "latent_sizes" :[10,10,10,8,4,15]}
+    aenc = attribute_encoder(3,s_config)
+    out = aenc(fake_input)
+    assert out['pre_q'].shape == (batch_size,6,8,8),"check attribute_encoder"
 
+    aq = AttributeQuantizer(10,64,0.1,'cosine')
+    finp = torch.rand(batch_size,6,8,8)
+    loss,quantized,perplexity,encodings,encoding_indices = aq(finp,None)
+    assert loss>=-1 and loss<=1, 'cosine similarity constraints not followed'
+    assert finp.shape == quantized.shape
+    assert encodings.shape == (batch_size*6,10),"encodings shape should be equal to batch size * number of channels quantized, num embeddings"
+    assert encoding_indices.shape == (batch_size*6,1),"should only contain indices for all flattened vectors"
+
+    print("all tests passed")

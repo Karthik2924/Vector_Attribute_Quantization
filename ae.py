@@ -26,9 +26,9 @@ gen = torch.manual_seed(seed)
 from fast_data import*
 import yaml
 with open("config.yaml", "r") as stream:
-    cfg = yaml.safe_load(stream)
-device = cfg['device']
-data_set = cfg['dataset_name']
+    configuration = yaml.safe_load(stream)
+device = configuration['device']
+data_set = configuration['dataset_name']
 #device  = 'cuda'
 
 method = "ae"
@@ -115,23 +115,6 @@ class AE(nn.Module):
         z = self.l1(enc.reshape(enc.shape[0],-1))
         return z
 
-# def eval(model):
-#     model.eval()
-#     #ev_data = test_set[:250].to(device)
-#     ev_data,test_labels,_ = next(iter(test_loader))
-#     with torch.no_grad():
-#         latent = model.get_enc(ev_data.to(device))
-#         #print(latent.shape)
-#         for i in range(1,20):
-#             data,tlabels,_ = next(iter(test_loader))
-#             z = model.get_enc(data.to(device))
-#             test_labels = torch.cat([test_labels,tlabels])
-#             #z = model.get_enc(test_set[i*250:(i+1)*250].to(device))
-#             latent = torch.cat([latent,z],0)
-#     #print(latent.shape)
-    
-#     res = compute_infomec(test_labels.cpu().numpy(), latent.detach().cpu().numpy(), False)
-#     return res
 
 def eval(model):
     model.eval()
@@ -181,8 +164,9 @@ def save(seed,lsize):
 
 
 #seed_list = [123,1234,12345,123456,1234567]
-seed_list = [1234,12345,123456,1234567]
+#seed_list = [1234,12345,123456,1234567]
 #seed_list = [1234567]
+seed_list = configuration['seed_list']
 
 for s in seed_list:
 
@@ -277,8 +261,8 @@ for s in seed_list:
         config  = {
         "name" : f'{data_set}vanilla_ae_latent_size_{lsize}',
         "latent_dim" : lsize,
-        "clip_grad_norm": 1.0, #(none if no clipping)
-        "learning_rate": optimizer.state_dict()['param_groups'][0]['lr'],
+        "clip_grad_norm": configuration['clip_grad_norm'], #(none if no clipping)
+        "learning_rate": configuration['learning_rate'],
         "seed": s
             
         }

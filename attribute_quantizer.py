@@ -23,11 +23,11 @@ from fast_data import *
 from aq_blocks import *
 import yaml
 with open("config.yaml", "r") as stream:
-    cfg = yaml.safe_load(stream)
-device = cfg['device']
+    configuration = yaml.safe_load(stream)
+device = configuration['device']
 #device  = 'cuda'
 #dataset_name = 'isaac'
-dataset_name = cfg['dataset_name']
+dataset_name = configuration['dataset_name']
 s_config = {
     "groups" : 6,
     "img_width" : 64,
@@ -58,19 +58,15 @@ tset = torch.from_numpy(ds.images[ds.test]).permute(0,3,1,2)/255.
 tlabels = ds.labels[ds.test]
 def eval(model):
     model.eval
-    #ev_data = test_set[:250].to(device)
     ev_data = tset[:250].to(device)
 
     with torch.no_grad():
         outs = model(ev_data.to(device))
-        #print(outs.keys())
         latent = torch.cat(outs['elist'],1) + torch.tensor(ds.cumulate,device = device)
-        #print(latent.shape)
         for i in range(1,20):
             outs = model(tset[i*250:(i+1)*250].to(device))
             z = torch.cat(outs['elist'],1) + torch.tensor(ds.cumulate,device = device)
             latent = torch.cat([latent,z],0)
-    #print(latent.shape)
     
     res = compute_infomec(tlabels.cpu().numpy(), latent.float().detach().cpu().numpy(), True)
     return res
@@ -92,28 +88,24 @@ class AE(nn.Module):
         self.vq_list = nn.ModuleList(self.vq_list)
     def forward(self,x,labels = None):
         out = self.encoder(x)
-        #print(latent.shape)
-        #return latent,self.decoder(latent)
+
         q = torch.zeros(out['pre_q'].shape).to(device)
-        #print(self.lsize)
         plist = [None]*self.lsize
         elist = [None]*self.lsize
         llist= [None]*self.lsize
         if labels !=None:
             for i,layer in enumerate(self.vq_list):
                 llist[i],q[:,i,:],plist[i],_,elist[i] = layer(out['pre_q'][:,i,:],labels[:,i])
-            #out.update(layer(out["pre_q"]))
         else:
             for i,layer in enumerate(self.vq_list):
-                #print(i)
-                #print(out['pre_q'].shape)
+
                 llist[i],q[:,i,:],plist[i],_,elist[i] = layer(out['pre_q'][:,i,:],labels)
         out.update({"llist":llist,"q":q,"plist":plist,"elist":elist})
 
         #print(q)
         out.update(self.decoder(q))
         return out#recon,llist,plist,elist
-        # return recon,[loss0,loss1,loss2,loss3,loss4,loss5],[perplexity0,perplexity1,perplexity2,perplexity3,perplexity4,perplexity5],[encoding_indices0,encoding_indices1,encoding_indices2,encoding_indices3,encoding_indices4,encoding_indices5]
+
     def build_optimizer(self,lr = 0.001):
         self.optimizer = optim.AdamW(self.parameters(), lr=lr, weight_decay=0.3)
         for name, param in self.named_parameters():
@@ -135,7 +127,7 @@ class AE(nn.Module):
         return {"commitment_loss":commitment_loss.item(),"recon":recon_loss.item(),"loss":loss.item()}
 
 groups = cfg['groups']
-
+lr = configuration['learning_rate']
 for j in range(5):
     
     ae = AE(120,64,0.25,cfg).to(device)
