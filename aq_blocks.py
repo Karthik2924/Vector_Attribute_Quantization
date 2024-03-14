@@ -3,11 +3,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 from blocks import*
 
-
-
-
-
-
 def l2norm(t):
     return F.normalize(t, p = 2, dim = 1)
 

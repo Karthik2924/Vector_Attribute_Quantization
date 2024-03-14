@@ -7,7 +7,6 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader
 #from data import *
-device  = 'cuda'
 import matplotlib.pyplot as plt
 import pandas as pd
 import plotly
@@ -22,9 +21,13 @@ from infomec import *
 from blocks import *
 from fast_data import *
 from aq_blocks import *
-
-dataset_name = 'isaac'
-
+import yaml
+with open("config.yaml", "r") as stream:
+    cfg = yaml.safe_load(stream)
+device = cfg['device']
+#device  = 'cuda'
+#dataset_name = 'isaac'
+dataset_name = cfg['dataset_name']
 s_config = {
     "groups" : 6,
     "img_width" : 64,

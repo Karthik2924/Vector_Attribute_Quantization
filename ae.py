@@ -7,7 +7,6 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader
 from data import *
-device  = 'cuda'
 import matplotlib.pyplot as plt
 import pandas as pd
 import plotly
@@ -25,8 +24,15 @@ import tqdm
 seed = 1234
 gen = torch.manual_seed(seed)
 from fast_data import*
+import yaml
+with open("config.yaml", "r") as stream:
+    cfg = yaml.safe_load(stream)
+device = cfg['device']
+data_set = cfg['dataset_name']
+#device  = 'cuda'
+
 method = "ae"
-data_set = "shapes3d"
+#data_set = "shapes3d"
 #data_set = "falcor3d"
 dp = shapes3d_dataset()
 #dp = isaac3d_data('isaac')

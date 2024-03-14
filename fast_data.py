@@ -1,7 +1,11 @@
 import h5py
 import numpy as np
 import torch
-device=  'cuda'
+import yaml
+with open("config.yaml", "r") as stream:
+    cfg = yaml.safe_load(stream)
+device = cfg['device']
+#device=  'cuda'
 
 class falcor3d_data():
     def __init__(self, balanced_subset_size = 5000):
@@ -103,6 +107,44 @@ class shapes3d_dataset(falcor3d_data):
         self.labels[:,4] = self.raw_labels[:,4].int()
         self.labels[:,5] = ((self.raw_labels[:,5]+30)/4.2857).int()
         self.get_variables()
+
+if __name__ == "__main__":
+    print("testing...")
+    batch_size = 32
+    ds = shapes3d_dataset()
+    a,b,c = ds.get_sup_batch(batch_size)
+    assert a.shape == (batch_size,3,64,64), f"shape of image_batch should be ({batch_size},3,64,64)"
+    assert b.shape == (batch_size,6) and c.shape ==(batch_size,6), f"shape of label shoudl be ({batch_size},6)"
+    a,b,c = ds.get_unsup_batch(batch_size)
+    assert a.shape == (batch_size,3,64,64), f"shape of image_batch should be ({batch_size},3,64,64)"
+    assert b.shape == (batch_size,6) and c.shape ==(batch_size,6), f"shape of label shoudl be ({batch_size},6)"
+    a,b,c = ds.get_test_batch(batch_size)
+    assert a.shape == (batch_size,3,64,64), f"shape of image_batch should be ({batch_size},3,64,64)"
+    assert b.shape == (batch_size,6) and c.shape ==(batch_size,6), f"shape of label shoudl be ({batch_size},6)"
+
+    ds = falcor3d_data()
+    a,b,c = ds.get_sup_batch(batch_size)
+    assert a.shape == (batch_size,3,128,128), f"shape of image_batch should be ({batch_size},3,128,128)"
+    assert b.shape == (batch_size,7) and c.shape ==(batch_size,7), f"shape of label shoudl be ({batch_size},7)"
+    a,b,c = ds.get_unsup_batch(batch_size)
+    assert a.shape == (batch_size,3,128,128), f"shape of image_batch should be ({batch_size},3,128,128)"
+    assert b.shape == (batch_size,7) and c.shape ==(batch_size,7), f"shape of label shoudl be ({batch_size},7)"
+    a,b,c = ds.get_test_batch(batch_size)
+    assert a.shape == (batch_size,3,128,128), f"shape of image_batch should be ({batch_size},3,128,128)"
+    assert b.shape == (batch_size,7) and c.shape ==(batch_size,7), f"shape of label shoudl be ({batch_size},7)"
+
+    ds = isaac3d_data()
+    a,b,c = ds.get_sup_batch(batch_size)
+    assert a.shape == (batch_size,3,128,128), f"shape of image_batch should be ({batch_size},3,128,128)"
+    assert b.shape == (batch_size,9) and c.shape ==(batch_size,9), f"shape of label shoudl be ({batch_size},9)"
+    a,b,c = ds.get_unsup_batch(batch_size)
+    assert a.shape == (batch_size,3,128,128), f"shape of image_batch should be ({batch_size},3,128,128)"
+    assert b.shape == (batch_size,9) and c.shape ==(batch_size,9), f"shape of label shoudl be ({batch_size},9)"
+    a,b,c = ds.get_test_batch(batch_size)
+    assert a.shape == (batch_size,3,128,128), f"shape of image_batch should be ({batch_size},3,128,128)"
+    assert b.shape == (batch_size,9) and c.shape ==(batch_size,9), f"shape of label shoudl be ({batch_size},9)"
+    print("all tests passed")
+    
 
 
         

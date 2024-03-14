@@ -1,0 +1,3 @@
+device: 'cuda' #'cpu','mps'
+
+dataset_name : 'shapes3d' # isaac, falcor
